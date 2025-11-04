@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Demo - Voice Conversion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .flow-box {
+            position: relative;
+            flex: 1;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: visible;
+        }
+
+        .flow-box::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 50%, calc(100% - 30px) 100%, 0 100%, 30px 50%);
+        }
+
+        .flow-box:first-child::before {
+            clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 50%, calc(100% - 30px) 100%, 0 100%);
+        }
+
+        .flow-box:last-child::before {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 30px 50%);
+        }
+
+        .flow-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+            font-size: 1.8em;
+            font-weight: bold;
+            text-align: center;
+            padding: 0 40px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .source-box {
+            background: #4a6fa5;
+            flex: 1.5;
+        }
+
+        .source-box:hover {
+            background: #5a7fb5;
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .reference-box {
+            background: #88b04b;
+            flex: 1.2;
+        }
+
+        .reference-box:hover {
+            background: #98c05b;
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .result-box {
+            background: #4a6fa5;
+            flex: 1.5;
+        }
+
+        .result-box:hover {
+            background: #5a7fb5;
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .label {
+            font-size: 0.5em;
+            display: block;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .name {
+            font-size: 1em;
+        }
+
+        .playing {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .audio-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            min-width: 250px;
+            display: none;
+        }
+
+        .audio-controls.visible {
+            display: block;
+        }
+
+        .audio-controls h3 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .audio-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a6fa5;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #4a6fa5;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .control-buttons button:hover {
+            background: #5a7fb5;
+        }
+
+        .reference-label {
+            font-size: 0.6em;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Row 1: Gregor (male) -> Avdič -->
+        <div class="flow-row">
+            <div class="flow-box source-box" data-audio="audio/vid_src.wav" data-name="Vid (source)">
+                <div class="flow-content">
+                    <span class="label">posnetek (moški)</span>
+                    <span class="name">Vid</span>
+                </div>
+            </div>
+            <div class="flow-box reference-box" data-audio="audio/vid_avdic.wav" data-name="Avdič (reference)">
+                <div class="flow-content">
+                    <span class="label">referenca:</span>
+                    <span class="reference-label">Avdič</span>
+                </div>
+            </div>
+            <div class="flow-box result-box" data-audio="audio/vid_avdic.wav" data-name="Vid → Avdič">
+                <div class="flow-content">
+                    <span class="label">rezultat</span>
+                    <span class="name">Avdič</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Klara (female) -> Denis -->
+        <div class="flow-row">
+            <div class="flow-box source-box" data-audio="audio/klara_src.wav" data-name="Klara (source)">
+                <div class="flow-content">
+                    <span class="label">posnetek (ženski)</span>
+                    <span class="name">Klara</span>
+                </div>
+            </div>
+            <div class="flow-box reference-box" data-audio="audio/klara_denis.wav" data-name="Denis (reference)">
+                <div class="flow-content">
+                    <span class="label">referenca:</span>
+                    <span class="reference-label">Denis</span>
+                </div>
+            </div>
+            <div class="flow-box result-box" data-audio="audio/klara_denis.wav" data-name="Klara → Denis">
+                <div class="flow-content">
+                    <span class="label">rezultat</span>
+                    <span class="name">Denis</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Gregor (male) -> Tadej -->
+        <div class="flow-row">
+            <div class="flow-box source-box" data-audio="audio/gregor_src.wav" data-name="Gregor (source)">
+                <div class="flow-content">
+                    <span class="label">posnetek (moški)</span>
+                    <span class="name">Gregor</span>
+                </div>
+            </div>
+            <div class="flow-box reference-box" data-audio="audio/gregor_tadej.wav" data-name="Tadej (reference)">
+                <div class="flow-content">
+                    <span class="label">referenca:</span>
+                    <span class="reference-label">Tadej</span>
+                </div>
+            </div>
+            <div class="flow-box result-box" data-audio="audio/gregor_tadej.wav" data-name="Gregor → Tadej">
+                <div class="flow-content">
+                    <span class="label">rezultat</span>
+                    <span class="name">Tadej</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="audio-controls" id="audioControls">
+        <h3>Now Playing</h3>
+        <div class="audio-info" id="audioInfo">-</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="audio-info" id="timeInfo">0:00 / 0:00</div>
+        <div class="control-buttons">
+            <button id="stopBtn">Stop</button>
+        </div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioControls = document.getElementById('audioControls');
+        const audioInfo = document.getElementById('audioInfo');
+        const progressFill = document.getElementById('progressFill');
+        const timeInfo = document.getElementById('timeInfo');
+        const stopBtn = document.getElementById('stopBtn');
+        let currentPlayingBox = null;
+
+        // Format time in mm:ss
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Add click event to all flow boxes
+        document.querySelectorAll('.flow-box').forEach(box => {
+            box.addEventListener('click', function() {
+                const audioSrc = this.getAttribute('data-audio');
+                const audioName = this.getAttribute('data-name');
+
+                // If clicking the same box, toggle play/pause
+                if (currentPlayingBox === this && !audioPlayer.paused) {
+                    audioPlayer.pause();
+                    audioPlayer.currentTime = 0;
+                    this.classList.remove('playing');
+                    audioControls.classList.remove('visible');
+                    currentPlayingBox = null;
+                    return;
+                }
+
+                // Stop current audio and remove playing class from previous box
+                if (currentPlayingBox) {
+                    currentPlayingBox.classList.remove('playing');
+                }
+
+                // Play new audio
+                audioPlayer.src = audioSrc;
+                audioPlayer.play();
+                this.classList.add('playing');
+                currentPlayingBox = this;
+
+                // Show controls
+                audioControls.classList.add('visible');
+                audioInfo.textContent = audioName;
+            });
+        });
+
+        // Update progress bar
+        audioPlayer.addEventListener('timeupdate', function() {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progressFill.style.width = progress + '%';
+            timeInfo.textContent = `${formatTime(audioPlayer.currentTime)} / ${formatTime(audioPlayer.duration)}`;
+        });
+
+        // When audio ends
+        audioPlayer.addEventListener('ended', function() {
+            if (currentPlayingBox) {
+                currentPlayingBox.classList.remove('playing');
+                currentPlayingBox = null;
+            }
+            audioControls.classList.remove('visible');
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', function() {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            if (currentPlayingBox) {
+                currentPlayingBox.classList.remove('playing');
+                currentPlayingBox = null;
+            }
+            audioControls.classList.remove('visible');
+        });
+
+        // Handle audio loading errors
+        audioPlayer.addEventListener('error', function() {
+            alert('Error loading audio file. Please check if the file exists.');
+            if (currentPlayingBox) {
+                currentPlayingBox.classList.remove('playing');
+                currentPlayingBox = null;
+            }
+            audioControls.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>
