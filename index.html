@@ -220,6 +220,19 @@
             text-decoration: underline;
         }
 
+        .reference-box {
+            cursor: default;
+        }
+
+        .reference-box:hover {
+            transform: none;
+            filter: none;
+        }
+
+        .reference-box:hover::before {
+            background: #88b04b;
+        }
+
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -407,8 +420,8 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // Add click event to all flow boxes
-        document.querySelectorAll('.flow-box').forEach(box => {
+        // Add click event to all flow boxes except reference boxes
+        document.querySelectorAll('.flow-box:not(.reference-box)').forEach(box => {
             box.addEventListener('click', function() {
                 const audioSrc = this.getAttribute('data-audio');
                 const audioName = this.getAttribute('data-name');
